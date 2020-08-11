@@ -1,0 +1,123 @@
+Please enter the full pathname in which the test tablespace should be created.
+Suggested: +DATA
+Press ENTER to accept suggestion, or enter pathname: 
+Please enter the number of datafiles to create in the test tablespace (default: 1): 
+Please enter the size of the test tablespace to be created (MBytes): 1000
+Please enter AES128, AES192, AES256, or NONE for tablespace encryption (default: NONE): 
+
+
+Preparation: creating AWR snapshot at beginning of test...
+...AWR snapshot #1 created...
+Script version :                                                    2.00
+Attr: tablespace - blocks :                                      128,000
+Attr: tablespace - MB :                                         1,000.00
+Attr: tablespace - encryption :                                     NONE
+Attr: table - rows :                                             125,706
+Parm: db_16k_cache_size :                                              0 (default)
+Parm: db_2k_cache_size :                                               0 (default)
+Parm: db_32k_cache_size :                                              0 (default)
+Parm: db_4k_cache_size :                                               0 (default)
+Parm: db_8k_cache_size :                                               0 (default)
+Parm: db_block_size :                                               8192
+Parm: db_cache_size :                                                  0 (default)
+Parm: db_file_multiblock_read_count :                                 64
+Parm: db_flash_cache_size :                                            0 (default)
+Parm: db_keep_cache_size :                                             0 (default)
+Parm: db_recycle_cache_size :                                          0 (default)
+Parm: filesystemio_options :                                      SETALL
+Parm: memory_max_target :                                              0 (default)
+Parm: memory_target :                                                  0 (default)
+Parm: parallel_max_servers :                                          64
+Parm: pga_aggregate_target :                                 21474836480
+Parm: sga_max_size :                                        210453397504 (default)
+Parm: sga_target :                                          210453397504
+
+Block #1 - Populating the table...
+Stat: table - load elapsed (s) :                                    5.59
+Stat: table - stats elapsed (s) :                                   1.94
+Attr: table - num_rows :                                         125,706
+Attr: table - avg row length (b) :                                   406
+Attr: table - used blocks :                                      126,298
+Attr: table - used MB :                                           986.70
+Stat: load - CPU (s) :                                              0.67
+Stat: load - MB/s :                                              176.512
+Stat: load - physical writes :                                   125,706
+Stat: load - physical writes (MB) :                               982.08
+Stat: load - physical writes (MB/s) :                            175.685
+Stat: load - physical writes from cache :                              0
+Stat: load - physical writes direct :                            125,706
+
+Block #2: noparallel FULL table scan...
+Stat: query - elapsed (s) :                                         1.89
+Stat: query - row count :                                        125,706
+Stat: query - CPU (s) :                                             1.45
+Stat: query - logical reads :                                    125,834
+Stat: query - logical reads (MB) :                                983.08
+Stat: query - logical reads (MB/s) :                             520.147
+Stat: query - physical reads :                                   125,706
+Stat: query - physical reads (MB) :                               982.08
+Stat: query - physical reads (MB/s) :                            519.618
+Stat: query - physical reads direct :                                  0
+Stat: query - physical reads direct (MB) :                          0.00
+Stat: query - physical reads cache :                             125,706
+Stat: query - physical reads cache (MB) :                         982.08
+Stat: query - physical reads cache prefetch :                    123,732
+Stat: query - physical reads cache prefetch (MB) :                966.66
+Elapsed: 00:00:01.95
+
+Block #3: parallel FULL table scans...
+Stat: parallel4 - DOP :                                                4
+Stat: parallel4 - row count :                                    125,706
+Stat: parallel4 - elapsed (s) :                                     0.13
+Stat: parallel4 - MB :                                            986.70
+Stat: parallel4 - MB/s :                                       7,590.024
+Stat: parallel8 - DOP                                                  8
+Stat: parallel8 - row count :                                    125,706
+Stat: parallel8 - elapsed (s) :                                     0.06
+Stat: parallel8 - MB :                                            986.70
+Stat: parallel8 - MB/s :                                      16,445.052
+Stat: parallel12 - DOP                                                12
+Stat: parallel12 - row count :                                   125,706
+Stat: parallel12 - elapsed (s) :                                    0.06
+Stat: parallel12 - MB :                                           986.70
+Stat: parallel12 - MB/s :                                     16,445.052
+Stat: parallel16 - DOP                                                16
+Stat: parallel16 - row count :                                   125,706
+Stat: parallel16 - elapsed (s) :                                    0.04
+Stat: parallel16 - MB :                                           986.70
+Stat: parallel16 - MB/s :                                     24,667.578
+Elapsed: 00:00:00.41
+
+Block #4 - Add an index...
+Attr: index - used blocks :                                          384
+Attr: index - used leaf rows :                                   125,706
+Attr: index - used branch rows :                                     261
+Attr: index - used leaf blocks :                                     262
+Attr: index - used branch blocks :                                     1
+Attr: index - B*Tree MB :                                           2.01
+Attr: index - used MB :                                             1.79
+Elapsed: 00:00:06.72
+
+Block #5: noparallel indexed table scans...
+Stat: query - elapsed (s) :                                        17.07
+Stat: query - row count :                                        125,706
+Stat: query - CPU (s) :                                             9.41
+Stat: query - logical reads :                                    377,125
+Stat: query - logical reads (MB) :                              2,946.29
+Stat: query - logical reads (MB/s) :                             172.600
+Stat: query - physical reads :                                   125,966
+Stat: query - physical reads (MB) :                               984.11
+Stat: query - physical reads (MB/s) :                             57.651
+Stat: query - physical reads direct :                                  0
+Stat: query - physical reads direct (MB) :                          0.00
+Stat: query - physical reads cache :                             125,966
+Stat: query - physical reads cache (MB) :                         984.11
+Stat: query - physical reads cache prefetch :                          0
+Stat: query - physical reads cache prefetch (MB) :                  0.00
+Elapsed: 00:00:17.11
+
+Drop the tablespace to clean up...
+Elapsed: 00:00:04.89
+
+Conclusion: creating AWR report at finish of test...
+Elapsed: 00:00:03.04
