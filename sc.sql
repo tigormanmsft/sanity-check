@@ -236,7 +236,7 @@ where	name in ('sga_target','sga_max_size','memory_target','memory_max_target', 
 or	name like 'db\_%\_cache_size' escape '\'
 order by 1;
 
-set serveroutput on size 1000000
+set serveroutput on size 1000000 timing on
 prompt
 prompt Block #1 - Populating the table...
 declare
@@ -320,8 +320,6 @@ begin
 	--
 end;
 /
-
-set timing on
 
 prompt 
 prompt Block #2: noparallel FULL table scan...
