@@ -68,11 +68,15 @@
  *      TGorman 11-Aug 2020     v2.0 created as github project
  *      TGorman 06-Apr 2023     v2.1 added cleanup DROPs to beginning of script
  *                                   and added display of db file sequential read
- *                                   average wait time to gauge I/O latency
+ *                                   average wait time to estimate read I/O latency
+ *      TGorman 10-Apr 2023     v2.2 added display of log file parallel write
+ *                                   average wait time to estimate write I/O latency
+ *                                   and also moved prompted question about size of
+ *                                   temporary (scratch) tablespace to be first...
  ********************************************************************************/
 set echo off feedback off timing off pagesize 0 linesize 500 trimout on trimspool on pause off serveroutput on verify off
 variable v_version number
-exec :v_version := 2.1;
+exec :v_version := 2.2;
 whenever oserror continue
 whenever sqlerror continue
 col pmax4 new_value V_PMAX4 noprint
@@ -108,23 +112,6 @@ prompt
 whenever oserror exit failure
 whenever sqlerror exit failure
 
-/*
- * TGorman - added 16Jan19 for multi-tenant database support...
- */
-accept V_PDB prompt "If this is a multitenant database, please specify PDB name (otherwise just press ENTER): "
-declare
-        v_12c_or_higher varchar2(5) := 'FALSE';
-begin
-        if '&&V_PDB' is not null then
-                select 'TRUE' into v_12c_or_higher from v$instance where version >= '12';
-                if nvl(v_12c_or_higher, 'FALSE') <> 'TRUE' then
-                        raise_application_error(-20000, 'Database version is less than 12');
-                end if;
-                execute immediate 'alter session set container = &&V_PDB';
-        end if;
-end;
-/
-
 select  least(4, greatest((select count(*) from v$px_session where sid <> qcsid),
                            (select value from v$parameter where name = 'parallel_max_servers'))) pmax4,
         least(8, greatest((select count(*) from v$px_session where sid <> qcsid),
@@ -143,17 +130,30 @@ select decode(substr(file_name,1,1),'/',substr(file_name, 1, instr(file_name,'/'
 from  dba_data_files where file_id = (select min(file_id) from dba_data_files);
 
 spool sc_&&V_INSTANCE._&&V_TSTAMP
-prompt Please enter the full pathname in which the test tablespace should be created.
-prompt Suggested: &&V_PATHNAME
-accept V_DCFD prompt "Press ENTER to accept suggestion, or enter pathname: "
-accept V_DFNUM prompt "Please enter the number of datafiles to create in the test tablespace (default: 1): "
-accept V_MB prompt "Please enter the size of the test tablespace to be created (MBytes): "
+accept V_MB prompt "Please enter the size of the test tablespace to be created (100 <--> 32767 MBytes): "
 begin
-        if &&V_MB < 100 then
-                raise_application_error(-20000, 'Please specify 100 MB or more');
+        if &&V_MB < 100 or &&V_MB >= 32768 then
+                raise_application_error(-20000, 'Please specify between 100 MB and 32767 MBytes');
         end if;
 end;
 /
+accept V_PDB prompt "If this is a multitenant database, please specify PDB name (otherwise just press ENTER): "
+declare
+        v_12c_or_higher varchar2(5) := 'FALSE';
+begin
+        if '&&V_PDB' is not null then
+                select 'TRUE' into v_12c_or_higher from v$instance where version >= '12';
+                if nvl(v_12c_or_higher, 'FALSE') <> 'TRUE' then
+                        raise_application_error(-20000, 'Database version is less than 12');
+                end if;
+                execute immediate 'alter session set container = &&V_PDB';
+        end if;
+end;
+/
+prompt Please enter the full pathname in which the test tablespace should be created.
+prompt .....Suggested: &&V_PATHNAME
+accept V_DCFD prompt ".....Press ENTER to accept suggestion, or enter pathname: "
+accept V_DFNUM prompt "Please enter the number of datafiles to create in the test tablespace (default: 1): "
 accept V_ENC prompt "Please enter AES128, AES192, AES256, or NONE for tablespace encryption (default: NONE): "
 begin
         if '&&V_ENC' not in ('AES128','AES192','AES256','NONE','') then
@@ -239,7 +239,7 @@ create global temporary table msft#sc_gtt (col1 number) on commit preserve rows;
 
 exec select block_size into :v_ts_blksz from dba_tablespaces where tablespace_name = 'MSFT#SC_TS';
 exec select sum(blocks), round((sum(blocks)-(8*(1048576/:v_ts_blksz)))*0.99,0) into :v_ts_blks, :v_tbl_rows from dba_data_files where tablespace_name = 'MSFT#SC_TS';
-exec dbms_output.put_line(rpad('Script version : ',66,' ')||to_char(:v_version,'90.00'));
+exec dbms_output.put_line(rpad('Script version : ',66,' ')||to_char(:v_version,'90.0'));
 exec dbms_output.put_line(rpad('Attr: tablespace - blocks : ',60,' ')||to_char(:v_ts_blks,'999,999,990'));
 exec dbms_output.put_line(rpad('Attr: tablespace - MB : ',57,' ')||to_char((:v_ts_blks*:v_ts_blksz)/1048576,'999,999,990.00'));
 exec dbms_output.put_line(rpad('Attr: tablespace - encryption : ',66,' ')||:v_enc_display);
@@ -584,6 +584,8 @@ declare
         v_cpu           number;
         v_dfsr_waits    number;
         v_dfsr_usecs    number;
+        v_lfpw_waits    number;
+        v_lfpw_usecs    number;
 begin
         --
         v_rows := :v_tbl_rows;
@@ -603,6 +605,8 @@ begin
         where s.statistic# = n.statistic# and n.name = 'session logical reads';
         select total_waits, time_waited_micro into v_dfsr_waits, v_dfsr_usecs from v$session_event
         where sid = (select distinct sid from v$mystat) and event = 'db file sequential read';
+        select total_waits, time_waited_micro into v_lfpw_waits, v_lfpw_usecs from v$system_event
+        where event = 'log file parallel write';
         --
         v_hsecs := dbms_utility.get_time;
         --
@@ -633,6 +637,8 @@ begin
         where s.statistic# = n.statistic# and n.name = 'physical reads';
         select total_waits - v_dfsr_waits, time_waited_micro - v_dfsr_usecs into v_dfsr_waits, v_dfsr_usecs from v$session_event
         where sid = (select distinct sid from v$mystat) and event = 'db file sequential read';
+        select total_waits - v_lfpw_waits, time_waited_micro - v_lfpw_usecs into v_lfpw_waits, v_lfpw_usecs from v$system_event
+        where event = 'log file parallel write';
         --
         dbms_output.put_line(rpad('Stat: query - row count : ',60,' ')||to_char(v_totcnt,'999,999,990'));
         dbms_output.put_line(rpad('Stat: query - CPU (s) : ',57,' ')||to_char(v_cpu/100,'999,999,990.00'));
@@ -654,7 +660,14 @@ begin
         dbms_output.put_line(rpad('Stat: query - physical reads cache prefetch (MB) : ',57,' ')||to_char((v_phyrd_cpf*v_blksz)/1048576,'999,999,990.00'));
         dbms_output.put_line(rpad('Event: query - db file sequential read waits : ',60,' ')||to_char(v_dfsr_waits,'999,999,990'));
         dbms_output.put_line(rpad('Event: query - db file sequential read usecs : ',60,' ')||to_char(v_dfsr_usecs,'999,999,990'));
-        dbms_output.put_line(rpad('Event: query - db file sequential read avg wait : ',61,' ')||to_char(v_dfsr_usecs/v_dfsr_waits,'990.000000'));
+        dbms_output.put_line(rpad('Event: query - db file sequential read avg wait (us) : ',65,' ')||to_char(v_dfsr_usecs/v_dfsr_waits,'990.00'));
+        dbms_output.put_line(rpad('Event: query - log file parallel write waits : ',60,' ')||to_char(v_lfpw_waits,'999,999,990'));
+        dbms_output.put_line(rpad('Event: query - log file parallel write usecs : ',60,' ')||to_char(v_lfpw_usecs,'999,999,990'));
+        if v_lfpw_waits > 0 then
+                dbms_output.put_line(rpad('Event: query - log file parallel write avg wait (us) : ',65,' ')||to_char(v_lfpw_usecs/v_lfpw_waits,'990.00'));
+        else
+                dbms_output.put_line(rpad('Event: query - log file parallel write avg wait (us) : ',61,' ')||lpad('n/a', 11, ' '));
+        end if;
 end;
 /
 
@@ -674,23 +687,27 @@ REM
 REM alter session set events '10046 trace name context off';
 REM alter session set events '10949 trace name context off';
 REM alter session set "_serial_direct_read" = false;
+set timing off
 
 REM 
 REM Take an AWR snapshot to conclude the test...
 REM 
 prompt 
-prompt Conclusion: creating AWR report at finish of test...
-exec :end_sn := dbms_workload_repository.create_snapshot(flush_level=>'ALL')
+prompt 
+prompt Completed spooling to text output file "sc_&&V_INSTANCE._&&V_TSTAMP..lst" from this session
+prompt 
+prompt Generating AWR report "sc_awr_&&V_INSTANCE._&&V_TSTAMP..html" for this session
 spool off
 
+exec :end_sn := dbms_workload_repository.create_snapshot(flush_level=>'ALL')
 set echo off feedback off timing off pagesize 0 linesize 8000 trimout on trimspool on verify off heading off underline on
 column output format a7995
 select output from table(dbms_workload_repository.awr_report_html(&&V_DBID, &&V_INSTANCE_NBR, :begin_sn, :end_sn, 0))
 
+set termout off
 spool sc_awr_&&V_INSTANCE._&&V_TSTAMP..html
 /
 spool off
-
-set pagesize 100 linesize 130 feedback 6 timing off verify on heading on
+set termout on pagesize 100 linesize 130 feedback 6 timing off verify on heading on
 whenever oserror continue
 whenever sqlerror continue
