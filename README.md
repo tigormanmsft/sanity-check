@@ -7,17 +7,17 @@ The script is intended to be executed from the Oracle SQL\*Plus utility while co
 
 The script will interactively prompt for...
 
-  1. PDB Name
+  1. Size (in MiB) of the temporary "scratch" tablespace
+       - No default value, must be between 100 MiB and 32767 MiB (i.e. Oracle SMALLFILE tablespace)
+  2. PDB Name
        - If the database is single-tenant, then just press ENTER to skip
        - If the database is multi-tenant and the test to be performed within the container database (CDB), then just press ENTER
-  2. Pathname in which the temporary "scratch" tablespace should be created
+  3. Pathname in which the temporary "scratch" tablespace should be created
        - This can be a filesystem path or the name of an ASM diskgroup
        - To accept what is displayed, just press ENTER
-  3. Number of datafiles in temporary "scratch" tablespace
+  4. Number of datafiles in temporary "scratch" tablespace
        - Default number of datafiles is "1"
        - To accept the default (recommended), just press ENTER
-  4. Size (in MiB) of the temporary "scratch" tablespace
-       - No default value, must be 100 MiB or greater
   5. Encryption cipher for the temporary "scratch" tablespace
        - Default value is NONE
        - Possible non-default values are AES128, AES192, or AES256
