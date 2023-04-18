@@ -1,8 +1,9 @@
+Please enter the size of the test tablespace to be created (100 <--> 32767 MBytes): 1000
+If this is a multitenant database, please specify PDB name (otherwise just press ENTER): 
 Please enter the full pathname in which the test tablespace should be created.
-Suggested: +DATA
-Press ENTER to accept suggestion, or enter pathname: 
+.....Suggested: /u04/oradata/ORADB01
+.....Press ENTER to accept suggestion, or enter pathname: 
 Please enter the number of datafiles to create in the test tablespace (default: 1): 
-Please enter the size of the test tablespace to be created (MBytes): 1000
 Please enter AES128, AES192, AES256, or NONE for tablespace encryption (default: NONE): 
 
 
@@ -114,10 +115,17 @@ Stat: query - physical reads cache :                             125,966
 Stat: query - physical reads cache (MB) :                         984.11
 Stat: query - physical reads cache prefetch :                          0
 Stat: query - physical reads cache prefetch (MB) :                  0.00
+Event: query - db file sequential read waits :                    44,418
+Event: query - db file sequential read usecs :                13,689,724
+Event: query - db file sequential read avg wait (us) :            308.20
+Event: query - log file parallel write waits :                        23
+Event: query - log file parallel write usecs :                    12,173
+Event: query - log file parallel write avg wait (us) :            529.26
 Elapsed: 00:00:17.11
 
 Drop the tablespace to clean up...
 Elapsed: 00:00:04.89
 
-Conclusion: creating AWR report at finish of test...
-Elapsed: 00:00:03.04
+Completed spooling to text output file "sc_oradb01_20200811_104508.lst" from this session
+
+Generating AWR report "sc_awr_oradb01_20200811_104508.html" for this session
