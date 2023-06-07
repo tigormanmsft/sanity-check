@@ -73,10 +73,11 @@
  *                                   average wait time to estimate write I/O latency
  *                                   and also moved prompted question about size of
  *                                   temporary (scratch) tablespace to be first...
+ *      TGorman 06-Jun 2023     v2.3 fixed formatting of last few lines in block 5
  ********************************************************************************/
 set echo off feedback off timing off pagesize 0 linesize 500 trimout on trimspool on pause off serveroutput on verify off
 variable v_version number
-exec :v_version := 2.2;
+exec :v_version := 2.3;
 whenever oserror continue
 whenever sqlerror continue
 col pmax4 new_value V_PMAX4 noprint
@@ -659,12 +660,12 @@ begin
         dbms_output.put_line(rpad('Stat: query - physical reads cache prefetch : ',60,' ')||to_char(v_phyrd_cpf,'999,999,990'));
         dbms_output.put_line(rpad('Stat: query - physical reads cache prefetch (MB) : ',57,' ')||to_char((v_phyrd_cpf*v_blksz)/1048576,'999,999,990.00'));
         dbms_output.put_line(rpad('Event: query - db file sequential read waits : ',60,' ')||to_char(v_dfsr_waits,'999,999,990'));
-        dbms_output.put_line(rpad('Event: query - db file sequential read usecs : ',60,' ')||to_char(v_dfsr_usecs,'999,999,990'));
-        dbms_output.put_line(rpad('Event: query - db file sequential read avg wait (us) : ',65,' ')||to_char(v_dfsr_usecs/v_dfsr_waits,'990.00'));
+        dbms_output.put_line(rpad('Event: query - db file sequential read usecs : ',52,' ')||to_char(v_dfsr_usecs,'999,999,999,999,990'));
+        dbms_output.put_line(rpad('Event: query - db file sequential read avg wait (us) : ',61,' ')||to_char(v_dfsr_usecs/v_dfsr_waits,'999,990.00'));
         dbms_output.put_line(rpad('Event: query - log file parallel write waits : ',60,' ')||to_char(v_lfpw_waits,'999,999,990'));
-        dbms_output.put_line(rpad('Event: query - log file parallel write usecs : ',60,' ')||to_char(v_lfpw_usecs,'999,999,990'));
+        dbms_output.put_line(rpad('Event: query - log file parallel write usecs : ',56,' ')||to_char(v_lfpw_usecs,'999,999,999,990'));
         if v_lfpw_waits > 0 then
-                dbms_output.put_line(rpad('Event: query - log file parallel write avg wait (us) : ',65,' ')||to_char(v_lfpw_usecs/v_lfpw_waits,'990.00'));
+                dbms_output.put_line(rpad('Event: query - log file parallel write avg wait (us) : ',61,' ')||to_char(v_lfpw_usecs/v_lfpw_waits,'999,990.00'));
         else
                 dbms_output.put_line(rpad('Event: query - log file parallel write avg wait (us) : ',61,' ')||lpad('n/a', 11, ' '));
         end if;
